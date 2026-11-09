@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Ganeva_Bot • Multi-Market Matches</title>
+<style>
+:root{
+  --bg:#050b17;--panel:#0e1b31;--panel2:#13233f;--line:#1f3556;--text:#eaf2ff;--muted:#8aa0c0;
+  --green:#2ee59d;--red:#ff5c6c;--gold:#f5c451;--blue:#5aa7ff;--violet:#8f7bff;--shadow:0 8px 22px rgba(0,0,0,.33);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;min-height:100%;background:radial-gradient(1200px 600px at 50% -10%,#10264a 0%,var(--bg) 60%);color:var(--text);font-family:Inter,"Segoe UI",Arial,Helvetica,sans-serif}
+body{display:flex;justify-content:center;padding:8px 8px 24px}
+.app{width:100%;max-width:440px}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+.green{color:var(--green)}.red{color:var(--red)}.gold{color:var(--gold)}
+
+/* top bar */
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-radius:16px;background:linear-gradient(135deg,#132a4f 0%,#0b1730 70%);border:1px solid var(--line);box-shadow:var(--shadow);margin-bottom:7px}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.logo{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;background:linear-gradient(135deg,var(--blue),var(--violet));box-shadow:0 0 16px rgba(90,167,255,.35)}
+.bname{font-size:15px;font-weight:900;letter-spacing:.3px;line-height:1.1}
+.bsub{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:8.5px;font-weight:800;letter-spacing:.6px;color:var(--muted);text-transform:uppercase}
+.dot{width:7px;height:7px;border-radius:50%;background:#556}
+.dot.online{background:var(--green);box-shadow:0 0 8px var(--green)}
+.dot.connecting{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+.dot.offline{background:var(--red)}
+.pricebox{text-align:right;flex:none}
+.plabel{font-size:8px;font-weight:900;letter-spacing:.7px;color:var(--muted)}
+.price{font-size:22px;font-weight:900;line-height:1.1}
+.pdigit{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;margin-left:6px;border-radius:6px;font-size:12px;font-weight:900;background:var(--panel2);border:1px solid var(--line);vertical-align:middle}
+.pdigit.hit{background:linear-gradient(135deg,var(--gold),#ff9d3b);color:#1a1200;border-color:transparent;box-shadow:0 0 12px rgba(245,196,81,.6)}
+
+/* cards */
+.card{background:linear-gradient(180deg,var(--panel),#0b1629);border:1px solid var(--line);border-radius:15px;padding:10px;margin-bottom:7px;box-shadow:var(--shadow);position:relative}
+.ctitle{display:flex;align-items:center;justify-content:space-between;font-size:9.5px;font-weight:900;letter-spacing:.9px;text-transform:uppercase;color:var(--blue);margin-bottom:7px}
+.ctitle .hint{color:var(--muted);font-weight:700;letter-spacing:.2px;text-transform:none;font-size:9.5px}
+.lbl{font-size:8.5px;font-weight:900;letter-spacing:.7px;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+.inp,.sel{width:100%;height:36px;background:#081222;border:1px solid var(--line);border-radius:10px;color:var(--text);padding:0 10px;font-size:13px;font-weight:800;outline:none}
+.inp:focus,.sel:focus{border-color:var(--blue)}
+.btn{height:36px;border:0;border-radius:10px;padding:0 12px;font-size:10.5px;font-weight:900;letter-spacing:.4px;cursor:pointer;color:#fff;background:linear-gradient(135deg,#2a7be0,#5a6cf0)}
+.btn.connected{background:#12382b;color:var(--green)}
+
+/* account: collapses to one line once connected */
+.acc{display:grid;grid-template-columns:1fr 76px auto;gap:6px;align-items:end}
+.accinfo{display:flex;justify-content:space-between;align-items:flex-end;margin-top:7px}
+.conn{font-size:9px;color:var(--muted);font-weight:700}
+.accid{font-size:8.5px;color:var(--muted);margin-top:2px}
+.bal{font-size:19px;font-weight:900}
+.accc.linked{padding:8px 10px}
+.accc.linked .acc > div{display:none}
+.accc.linked .acc{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:block}
+.accc.linked .accinfo{margin-top:0;padding-right:108px;align-items:center}
+.accc.linked .bal{font-size:17px}
+
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:7px}
+.kpi{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:12px;padding:6px 3px;text-align:center;min-width:0}
+.kl{font-size:7.5px;font-weight:900;letter-spacing:.7px;color:var(--muted);text-transform:uppercase}
+.kv{font-size:14px;font-weight:900;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* round card */
+.flash::after{content:"";position:absolute;inset:0;border-radius:15px;background:radial-gradient(circle at 50% 40%,rgba(46,229,157,.35),transparent 70%);animation:fl 1.1s ease-out forwards;pointer-events:none}
+@keyframes fl{from{opacity:1}to{opacity:0}}
+.tiles{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-bottom:6px}
+.tile{border-radius:8px;background:#081222;border:1px solid var(--line);padding:3px 1px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:40px}
+.tile .td{font-size:17px;font-weight:900;line-height:1;color:var(--gold)}
+.tile .tp{font-size:7.5px;font-weight:800;color:var(--muted);margin-top:0}
+.tile.live{border-color:var(--gold);box-shadow:0 0 12px rgba(245,196,81,.35);animation:pl 1s infinite}
+.tile.win{background:rgba(46,229,157,.16);border-color:var(--green);box-shadow:0 0 14px rgba(46,229,157,.5)}
+.tile.win .td{color:var(--green)}
+.tile.lose{background:rgba(255,92,108,.1);border-color:rgba(255,92,108,.5)}
+.tile.lose .td{color:var(--red)}
+.tile.skip{opacity:.4}
+@keyframes pl{0%,100%{box-shadow:0 0 0 rgba(245,196,81,0)}50%{box-shadow:0 0 12px rgba(245,196,81,.7)}}
+.pills{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}
+.pill{border-radius:9px;background:#081222;border:1px solid #14263d;padding:5px 2px;text-align:center;font-size:10px;font-weight:900;color:#4a6590}
+.pill small{display:block;font-size:7.5px;letter-spacing:.6px;margin-bottom:1px}
+.pill.lost{background:rgba(255,92,108,.12);border-color:rgba(255,92,108,.5);color:var(--red)}
+.pill.now{border-color:var(--gold);background:rgba(245,196,81,.1);color:var(--gold)}
+.sline{margin:5px 0 6px;font-size:9.5px;font-weight:800;color:#c8d8f2;text-align:center}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:6px 0 8px}
+.rl{display:flex;justify-content:space-between;align-items:center;gap:4px;padding:5px 7px;border-radius:8px;border:1px solid var(--line);background:#081222;font-size:8.5px;font-weight:800;color:var(--muted)}
+.rl b{font-size:9.5px;color:#c8d8f2}
+.rl.ok{color:var(--green);border-color:rgba(46,229,157,.5);background:rgba(46,229,157,.08)}
+.rl.ok b{color:var(--green)}
+.rl.bad{color:var(--red);border-color:rgba(255,92,108,.45);background:rgba(255,92,108,.07)}
+.rl.bad b{color:var(--red)}
+.checks{display:flex;gap:5px;margin:8px 0}
+.ck{flex:1;text-align:center;font-size:8px;font-weight:900;letter-spacing:.4px;padding:5px 2px;border-radius:8px;border:1px solid var(--line);background:#081222;color:var(--muted)}
+.ck.ok{color:var(--green);border-color:rgba(46,229,157,.5);background:rgba(46,229,157,.08)}
+.ck.bad{color:var(--red);border-color:rgba(255,92,108,.55);background:rgba(255,92,108,.08)}
+.ctrl{display:grid;grid-template-columns:1fr 1fr 44px;gap:7px}
+.cb{height:42px;border:0;border-radius:11px;font-weight:900;font-size:12px;letter-spacing:.5px;color:#fff;cursor:pointer}
+.start{background:linear-gradient(135deg,#17a76a,#2ee59d);color:#04170f}
+.start.running{background:#12382b;color:var(--green)}
+.pause{background:#243149;color:#dbe7fb}
+.pause.active{background:#a52b3a}
+.reset{background:#243149;font-size:18px}
+.activity{margin-top:7px;background:#081222;border:1px solid #14263d;border-radius:10px;padding:7px 10px;font-size:10px;font-weight:800;color:#dbe7fb;min-height:30px;display:flex;align-items:center}
+
+/* digit monitor */
+.bars{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;align-items:end;height:62px}
+.bcol{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.bfill{width:100%;border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,#3c64a3,#25406e);min-height:3px;transition:height .25s}
+.bcol.target .bfill{background:linear-gradient(180deg,var(--gold),#ff9d3b)}
+.bcol.top .bfill{background:linear-gradient(180deg,var(--green),#17a76a)}
+.blab{font-size:9px;font-weight:900;color:var(--muted);margin-top:3px}
+.bcol.target .blab{color:var(--gold)}
+.bcol.top .blab{color:var(--green)}
+.bcol.low .blab{color:var(--red)}
+.bpct{font-size:7px;color:var(--muted);height:10px;line-height:10px;white-space:nowrap}
+
+/* tabs + panels */
+.set{display:grid;grid-template-columns:repeat(12,1fr);gap:7px}
+.set>div{grid-column:span 4;min-width:0}
+.set>div:nth-child(n+4){grid-column:span 6}
+.set .inp{text-align:center;font-size:14px;height:38px;padding:0 4px}
+.set .lbl{text-align:center}
+.risk{margin-top:9px;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#081222}
+.risk .rr{display:grid;grid-template-columns:.7fr 1fr 1.2fr 1.3fr;gap:4px;padding:6px 8px;font-size:11px;text-align:center;border-top:1px solid #14263d}
+.risk .rh{border-top:0;font-size:8px;font-weight:900;letter-spacing:.6px;color:var(--muted);background:var(--panel2)}
+.risk .rr.off{opacity:.38}
+.risk .rr b{color:var(--gold)}
+.note{font-size:9px;line-height:1.5;color:var(--muted);margin:9px 1px 2px}
+.hrow{display:grid;grid-template-columns:42px 1fr 48px 60px;gap:6px;align-items:center;padding:6px 2px;border-bottom:1px solid #12233d;font-size:10px}
+.hrow:last-child{border-bottom:0}
+.hrow .t{color:var(--muted);font-size:9px}
+.res{font-size:9px;font-weight:900;text-align:center;padding:3px 0;border-radius:6px}
+.res.w{background:rgba(46,229,157,.14);color:var(--green)}
+.res.l{background:rgba(255,92,108,.13);color:var(--red)}
+.hpl{text-align:right;font-weight:900}
+.empty{color:var(--muted);font-size:10px;text-align:center;padding:10px 0}
+.log{height:180px;overflow-y:auto;background:#040a14;border:1px solid #11213a;border-radius:9px;padding:8px;font-family:ui-monospace,Menlo,monospace;font-size:9px;line-height:1.6}
+.ll{margin-bottom:2px;color:#cfe0fb}.ll.win{color:var(--green);font-weight:800}.ll.loss{color:var(--red);font-weight:800}.ll.warn{color:var(--gold)}.ll.error{color:var(--red)}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:7px}
+.tab{height:40px;border-radius:12px;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);color:#fff;font-size:8.5px;font-weight:900;letter-spacing:.2px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:3px;padding:0;cursor:pointer;box-shadow:var(--shadow);font-family:inherit}
+.tab .arrow{transform:rotate(-90deg);font-size:10px;color:var(--muted)}
+.tab.on{border-color:var(--blue);color:var(--blue)}
+.tab.on .arrow{transform:none}
+.panel{display:none;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:7px;box-shadow:var(--shadow)}
+.panel.open{display:block}
+#hist{max-height:300px;overflow-y:auto}
+.hcount{font-size:9px;color:var(--muted);font-weight:700;margin:0 2px 6px}
+.mtabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.mtab{height:40px;border-radius:12px;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);color:#fff;font-size:11px;font-weight:900;letter-spacing:.3px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-family:inherit;padding:0 2px}
+.mtab.on{border-color:var(--blue);color:var(--blue)}
+.mtab small{font-size:9px;font-weight:800;color:var(--muted)}
+.mtab small.gold{color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="top">
+    <div class="brand">
+      <div class="logo">AJ</div>
+      <div>
+        <div class="bname">Ganeva_Bot</div>
+        <div class="bsub"><span id="statusDot" class="dot offline"></span><span id="statusText">OFFLINE</span><span id="mkLabel">• V75s</span></div>
+      </div>
+    </div>
+    <div class="pricebox">
+      <div id="plabel" class="plabel">V75s LIVE</div>
+      <div class="price mono"><span id="price">----.--</span><span id="pdigit" class="pdigit">-</span></div>
+    </div>
+  </div>
+
+  <div id="accCard" class="card accc">
+    <div class="acc">
+      <div><div class="lbl">Personal Access Token</div><input id="pat" class="inp" type="password" autocomplete="off" placeholder="Paste PAT"></div>
+      <div><div class="lbl">Account</div><select id="accountType" class="sel"><option value="demo">DEMO</option><option value="real">REAL</option></select></div>
+      <button id="connectBtn" class="btn">CONNECT</button>
+    </div>
+    <div class="accinfo">
+      <div><div id="connText" class="conn">Ready</div><div id="accId" class="accid">Account: ----</div></div>
+      <div id="balance" class="bal mono">0.00 USD</div>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="kl">Session P/L</div><div id="kPL" class="kv mono green">0.00</div></div>
+    <div class="kpi"><div class="kl">Wins / Loss</div><div id="kWL" class="kv mono">0/0</div></div>
+    <div class="kpi"><div class="kl">Win rate</div><div id="kRate" class="kv mono">0%</div></div>
+    <div class="kpi"><div class="kl">Rounds</div><div id="kTrades" class="kv mono">0</div></div>
+  </div>
+
+  <div id="roundCard" class="card">
+    <div class="ctitle"><span id="roundTitle">Market</span><span class="hint" id="roundHint"></span></div>
+    <div id="sigLine" class="sline"></div>
+    <div id="pills" class="pills"></div>
+    <div class="checks"><div id="ckLive" class="ck">MARKET •</div><div id="ckData" class="ck">DATA •</div><div id="ckContract" class="ck">CONTRACT •</div></div>
+    <div class="ctrl">
+      <button id="startBtn" class="cb start">START</button>
+      <button id="pauseBtn" class="cb pause">PAUSE</button>
+      <button id="resetBtn" class="cb reset" title="Reset session">↻</button>
+    </div>
+    <div id="activity" class="activity">Waiting for connection...</div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle"><span>Last Digit Monitor</span><span class="hint" id="digHint">last 1000 ticks</span></div>
+    <div id="bars" class="bars"></div>
+  </div>
+
+  <div class="tabs">
+    <button id="tabSet" class="tab"><span>Settings</span><span class="arrow">▼</span></button>
+    <button id="tabHist" class="tab"><span>History</span><span class="arrow">▼</span></button>
+    <button id="tabMkt" class="tab"><span>Market</span><span class="arrow">▼</span></button>
+    <button id="tabLog" class="tab"><span>Sys Log</span><span class="arrow">▼</span></button>
+  </div>
+
+  <div id="pSet" class="panel">
+    <div class="set">
+      <div><div class="lbl">Stake</div><input id="sStake" class="inp mono" type="number" min="0.35" step="0.01" value="0.35"></div>
+      <div><div class="lbl">Max Lvl</div><input id="sMax" class="inp mono" type="number" min="1" max="10" step="1" value="2"></div>
+      <div><div class="lbl">Expiry</div><input id="sTicks" class="inp mono" type="number" min="1" max="10" value="1"></div>
+      <div><div class="lbl">TP</div><input id="sTP" class="inp mono" type="number" min="0" step="0.01" value="10"></div>
+      <div><div class="lbl">SL</div><input id="sSL" class="inp mono" type="number" min="0" step="0.01" value="20"></div>
+    </div>
+    <div id="risk" class="risk"></div>
+    <div class="note">Fixed strategy: MATCH 0-7 on any market whose 1000-tick setup is valid, entering when a tick lands on 8. After a loss the next setup on ANY market uses the next stake level.</div>
+  </div>
+  <div id="pHist" class="panel">
+    <div id="hcount" class="hcount">No rounds yet</div>
+    <div id="hist"><div class="empty">No rounds yet</div></div>
+  </div>
+  <div id="pMkt" class="panel">
+    <div id="mSum" class="hcount"></div>
+    <div id="mList" class="mtabs"></div>
+  </div>
+  <div id="pLog" class="panel">
+    <div id="log" class="log"></div>
+  </div>
+
+</div>
+
+<script>
+
+/* =========================================================
+   CONFIG
+   ========================================================= */
+const DERIV_APP_ID = "3447X0mxYSFx7iRN27jhP";
+const API_BASE     = "https://api.derivws.com";
+const MIN_STAKE    = 0.35;
+const STORE_KEY    = "ganeva_multi_state1";
+const STEP_PCT     = 957.14;                 /* every next level = previous stake + 957.14% of it */
+const DIGIT_WIN    = 1000;                   /* ticks used to rate every digit (Deriv tick history) */
+const DIGIT_MAX    = 1000;
+const RESULT_PAUSE = 0;
+
+/* ---- STRATEGY RULES (edit here) ---- */
+const MATCH_DIGITS   = [0, 1, 2, 3, 4, 5, 6, 7];   /* fixed Matches digits */
+const PAIRS          = MATCH_DIGITS.length;
+const TRIGGER_DIGIT  = 8;                          /* enter as soon as a tick lands on this digit */
+const R_LOW_MAX      = 10;                         /* digit 8 and digit 9 must each be BELOW this % */
+const R_ARC_DIST     = 3;                          /* most-appearing digit (green arc) must be at least this far from 8 (counted around the 0-9 circle) */
+const R_HIGH_MIN     = 10;                         /* at least R_HIGH_COUNT of digits 0-7 must be ABOVE this % */
+const R_HIGH_COUNT   = 4;
+const R_GAP_MIN      = 2;                          /* |% of digit 0 - % of digit 8| must be ABOVE this */
+const RULE_COUNT     = 5;
+
+const MARKET_DEFS = [
+  { id: "r10",   sym: "R_10",    name: "Volatility 10",        short: "V10" },
+  { id: "r25",   sym: "R_25",    name: "Volatility 25",        short: "V25" },
+  { id: "r50",   sym: "R_50",    name: "Volatility 50",        short: "V50" },
+  { id: "r75",   sym: "R_75",    name: "Volatility 75",        short: "V75" },
+  { id: "r100",  sym: "R_100",   name: "Volatility 100",       short: "V100" },
+  { id: "h10",   sym: "1HZ10V",  name: "Volatility 10 (1s)",   short: "V10s" },
+  { id: "h15",   sym: "1HZ15V",  name: "Volatility 15 (1s)",   short: "V15s" },
+  { id: "h25",   sym: "1HZ25V",  name: "Volatility 25 (1s)",   short: "V25s" },
+  { id: "h30",   sym: "1HZ30V",  name: "Volatility 30 (1s)",   short: "V30s" },
+  { id: "h50",   sym: "1HZ50V",  name: "Volatility 50 (1s)",   short: "V50s" },
+  { id: "h75",   sym: "1HZ75V",  name: "Volatility 75 (1s)",   short: "V75s" },
+  { id: "h90",   sym: "1HZ90V",  name: "Volatility 90 (1s)",   short: "V90s" },
+  { id: "h100",  sym: "1HZ100V", name: "Volatility 100 (1s)",  short: "V100s" },
+  { id: "h150",  sym: "1HZ150V", name: "Volatility 150 (1s)",  short: "V150s" },
+  { id: "h250",  sym: "1HZ250V", name: "Volatility 250 (1s)",  short: "V250s" },
+  { id: "bull",  sym: "RDBULL",  name: "Bull Market",          short: "Bull" }
+];
+
+/* =========================================================
+   STATE
+   ========================================================= */
+let ws = null, pat = "", account = null;
+let reconnectTimer = null, reconnectAttempt = 0, heartbeatTimer = null;
+let lastMsgAt = 0, lastResubAt = 0, wakeLock = null, subRun = 0;
+const STALE_MS = 4000;
+const TICK_STALE_MS = 10000;
+let connecting = false, authenticated = false;
+let reqCounter = 100, rateBackoff = 0;
+let balanceNow = null, currency = "USD";
+let directBuyOK = true, buySubOK = true;
+const requests = new Map();
+const isRate = e => /rate limit|too many|limit for/i.test((e && e.message) || "");
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const r2 = x => Math.round(x * 100 + 1e-7) / 100;
+const $ = id => document.getElementById(id);
+
+function newMkt(d){
+  return {
+    id: d.id, sym: d.sym, name: d.name, short: d.short,
+    digits: [], subscribed: false, subAt: 0, pip: 2, lastTickTime: 0, priceStr: "", lastDg: -1,
+    cnt: new Array(10).fill(0), pct: new Array(10).fill(0), n: 0, ready: false,
+    topDigits: [], arcDist: 0, highCount: 0, gap: 0, rules: [false, false, false, false, false], passed: 0, setup: false
+  };
+}
+let sel = "h75";
+const M = {}, BYSYM = {};
+MARKET_DEFS.forEach(d => { M[d.id] = newMkt(d); BYSYM[d.sym] = M[d.id]; });
+const cur = () => M[sel];
+
+/* ONE global trading state: any market can trigger, a loss raises the stake for the next setup on ANY market */
+const T = {
+  running: false, paused: false, activeCfg: null, pfBusy: false, pf: { live: null, data: null, contract: null },
+  tradeInFlight: false, openLegs: [], round: null, level: 0, sessionPL: 0, basePL: 0, wins: 0, losses: 0, history: [],
+  blockedUntil: 0, showResultUntil: 0, failCount: 0, activity: "Waiting for connection..."
+};
+
+/* =========================================================
+   LOG / STATUS
+   ========================================================= */
+function log(msg, type){
+  const d = document.createElement("div");
+  d.className = "ll" + (type ? " " + type : "");
+  d.textContent = "[" + new Date().toLocaleTimeString() + "] " + msg;
+  const box = $("log");
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+  while(box.children.length > 250) box.removeChild(box.firstChild);
+}
+function act(t){ T.activity = t; $("activity").textContent = t; }
+function setStatus(state, text){
+  $("statusDot").className = "dot " + state;
+  $("statusText").textContent = text;
+  $("connText").textContent = state === "online" ? "Connection stable" : state === "connecting" ? "Connecting..." : "Disconnected";
+}
+
+/* =========================================================
+   SAVE / LOAD
+   ========================================================= */
+function saveState(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify({
+      level: T.level, sessionPL: T.sessionPL, wins: T.wins, losses: T.losses, history: T.history.slice(-100), sel: sel,
+      stake: $("sStake").value, tp: $("sTP").value, sl: $("sSL").value, ticks: $("sTicks").value, maxLvl: $("sMax").value
+    }));
+  }catch(e){}
+}
+function loadState(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+    if(!s) return;
+    T.level = Math.max(0, Number(s.level) || 0);
+    T.sessionPL = Number(s.sessionPL) || 0;
+    T.wins = Number(s.wins) || 0;
+    T.losses = Number(s.losses) || 0;
+    T.history = Array.isArray(s.history) ? s.history.slice(-100) : [];
+    if(s.sel && M[s.sel]) sel = s.sel;
+    if(s.stake) $("sStake").value = s.stake;
+    if(s.tp !== undefined) $("sTP").value = s.tp;
+    if(s.sl !== undefined) $("sSL").value = s.sl;
+    if(s.ticks) $("sTicks").value = s.ticks;
+    if(s.maxLvl) $("sMax").value = s.maxLvl;
+  }catch(e){}
+}
+
+/* =========================================================
+   SETTINGS + STAKE LEVELS
+   ========================================================= */
+function levelsFor(base, n){
+  const out = [Math.max(MIN_STAKE, r2(base))];
+  while(out.length < n){ const prev = out[out.length - 1]; out.push(r2(prev + prev * STEP_PCT / 100)); }
+  return out;
+}
+function readSettings(){
+  let stake = Number($("sStake").value);
+  if(!Number.isFinite(stake) || stake < MIN_STAKE) stake = MIN_STAKE;
+  const maxLvl = Math.max(1, Math.min(10, Math.round(Number($("sMax").value) || 2)));
+  return {
+    stake: r2(stake),
+    tp: Math.max(0, Number($("sTP").value) || 0),
+    sl: Math.max(0, Number($("sSL").value) || 0),
+    ticks: Math.max(1, Math.min(10, Math.round(Number($("sTicks").value) || 1))),
+    maxLvl: maxLvl,
+    levels: levelsFor(stake, maxLvl)
+  };
+}
+function renderRisk(){
+  const box = $("risk");
+  if(!box) return;
+  const c = readSettings();
+  const lv = levelsFor(c.stake, 5);
+  let cum = 0;
+  let h = '<div class="rr rh"><span>LEVEL</span><span>PER DIGIT</span><span>COST PER TRADE (×' + PAIRS + ')</span><span>TOTAL IF ALL LOST</span></div>';
+  lv.forEach((v, i) => {
+    const cost = r2(v * PAIRS);
+    cum = r2(cum + cost);
+    h += '<div class="rr mono' + (i >= c.maxLvl ? " off" : "") + '"><span>L' + (i + 1) + '</span><span>' + v.toFixed(2) + '</span><b>' + cost.toFixed(2) + '</b><span class="red">' + cum.toFixed(2) + '</span></div>';
+  });
+  box.innerHTML = h;
+}
+function cfg(){ return T.activeCfg || readSettings(); }
+function levelStake(){ const l = cfg().levels; return l[Math.min(T.level, l.length - 1)]; }
+
+/* =========================================================
+   STRATEGY  -  rate every digit over the latest 1000 ticks
+   1. digit 8 below 10%            4. at least 4 of digits 0-7 above 10%
+   2. digit 9 below 10%            5. |digit 0 % - digit 8 %| above 2%
+   3. green arc (most frequent digit) at least 3 digits away from 8
+   Entry: the moment a tick lands on 8 while rules 1-5 hold. MATCH 0,1,2,3,4,5,6,7.
+   ========================================================= */
+function evaluate(m){
+  const arr = m.digits, n = arr.length;
+  const cnt = new Array(10).fill(0);
+  for(let i = 0; i < n; i++) cnt[arr[i]]++;
+  m.cnt = cnt; m.n = n; m.ready = n >= DIGIT_WIN;
+  m.pct = cnt.map(x => n ? x * 100 / n : 0);
+  let mx = 0; cnt.forEach(x => { if(x > mx) mx = x; });
+  m.topDigits = []; cnt.forEach((x, i) => { if(x === mx) m.topDigits.push(i); });
+  /* distance around the 0-9 circle (the Deriv digit arc); with ties every tied digit must be far enough */
+  m.arcDist = Math.min.apply(null, m.topDigits.map(d => { const a = Math.abs(d - TRIGGER_DIGIT); return Math.min(a, 10 - a); }));
+  m.highCount = MATCH_DIGITS.filter(d => cnt[d] * 100 > R_HIGH_MIN * n).length;
+  m.gap = n ? Math.abs(cnt[0] - cnt[8]) * 100 / n : 0;
+  m.rules = [
+    n > 0 && cnt[8] * 100 < R_LOW_MAX * n,
+    n > 0 && cnt[9] * 100 < R_LOW_MAX * n,
+    n > 0 && m.arcDist >= R_ARC_DIST,
+    m.highCount >= R_HIGH_COUNT,
+    n > 0 && Math.abs(cnt[0] - cnt[8]) * 100 > R_GAP_MIN * n
+  ];
+  m.passed = m.rules.filter(Boolean).length;
+  m.setup = m.ready && m.passed === RULE_COUNT;
+  return m.setup;
+}
+function idleText(){
+  const ms = MARKET_DEFS.map(d => M[d.id]);
+  const ready = ms.filter(m => m.ready);
+  if(!ready.length) return "Loading 1000-tick history...";
+  const lv = "L" + (T.level + 1) + " • ";
+  const armed = ready.filter(m => m.setup);
+  if(armed.length) return lv + "Setup ready: " + armed.map(m => m.short).join(", ") + " — entry on the next 8";
+  const best = ready.slice().sort((a, b) => b.passed - a.passed)[0];
+  return lv + "Watching " + ready.length + "/" + ms.length + " markets • closest: " + best.short + " " + best.passed + "/" + RULE_COUNT;
+}
+
+/* =========================================================
+   TICKS
+   ========================================================= */
+function handleTick(d){
+  const t = d.tick;
+  if(!t) return;
+  const m = BYSYM[t.symbol];
+  if(!m) return;
+  const q = Number(t.quote);
+  if(!Number.isFinite(q)) return;
+  if(t.pip_size !== undefined && Number.isFinite(Number(t.pip_size))) m.pip = Number(t.pip_size);
+  const s = q.toFixed(m.pip);
+  const dg = s.charCodeAt(s.length - 1) - 48;
+  m.lastTickTime = Date.now(); m.priceStr = s; m.lastDg = dg;
+  m.digits.push(dg);
+  if(m.digits.length > DIGIT_MAX) m.digits.shift();
+
+  const armed = evaluate(m);
+  const fire = armed && dg === TRIGGER_DIGIT;
+  const canTrade = T.running && !T.paused && authenticated && !T.openLegs.length && !T.tradeInFlight;
+  if(canTrade && fire) maybeEnter(m);                 /* FAST: buys leave before anything is drawn */
+
+  if(m.id === sel){
+    $("price").textContent = s; $("pdigit").textContent = dg;
+    $("pdigit").className = "pdigit" + (dg === TRIGGER_DIGIT ? " hit" : "");
+    renderDigits(m);
+    if(!T.openLegs.length) renderRound(m);
+  }
+}
+function handleBalance(d){
+  const b = d.balance;
+  if(!b) return;
+  const n = Number(b.balance);
+  if(!Number.isFinite(n)) return;
+  balanceNow = n;
+  currency = b.currency || (account && account.currency) || "USD";
+  $("balance").textContent = n.toFixed(2) + " " + currency;
+}
+
+/* =========================================================
+   HTTP  (accounts + one-time password)
+   ========================================================= */
+async function fetchJSON(url, options){
+  const ctl = new AbortController();
+  const tm = setTimeout(() => ctl.abort(), 8000);
+  let r, text;
+  try{
+    r = await fetch(url, Object.assign({}, options || {}, { signal: ctl.signal }));
+    text = await r.text();
+  }
+  catch(e){ throw new Error(e && e.name === "AbortError" ? "Deriv web request timed out." : (e.message || "Network error")); }
+  finally{ clearTimeout(tm); }
+  let data;
+  try{ data = JSON.parse(text); }catch(e){ throw new Error(text || "HTTP " + r.status); }
+  if(!r.ok){
+    const m = (data && data.errors && data.errors[0] && data.errors[0].message) || (data && data.message) || "HTTP " + r.status;
+    throw new Error(m);
+  }
+  return data;
+}
+
+async function getAccounts(){
+  log("Requesting Deriv accounts...");
+  const data = await fetchJSON(API_BASE + "/trading/v1/options/accounts", {
+    headers: { "Deriv-App-ID": DERIV_APP_ID, "Authorization": "Bearer " + pat }
+  });
+  let list = [];
+  if(Array.isArray(data && data.data)) list = data.data;
+  else if(data && data.data) list = [data.data];
+  else if(Array.isArray(data && data.accounts)) list = data.accounts;
+  const want = $("accountType").value;
+  const found = list.find(a => String(a.account_type || a.type || a.accountType || "").toLowerCase() === want);
+  if(!found) throw new Error("No " + want.toUpperCase() + " Options account found for this PAT.");
+  const id = found.account_id || found.accountId || found.id;
+  if(!id) throw new Error("Deriv account ID was not returned.");
+  found.account_id = id;
+  found._want = want;
+  account = found;
+  $("accId").textContent = "Account: " + id;
+  log("Account selected: " + id + " (" + want.toUpperCase() + ")");
+  return found;
+}
+
+async function getOTP(accountId){
+  const data = await fetchJSON(API_BASE + "/trading/v1/options/accounts/" + encodeURIComponent(accountId) + "/otp", {
+    method: "POST",
+    headers: { "Deriv-App-ID": DERIV_APP_ID, "Authorization": "Bearer " + pat }
+  });
+  const url = data && data.data && data.data.url;
+  if(!url) throw new Error("Deriv did not return a WebSocket URL.");
+  return url;
+}
+
+/* =========================================================
+   CONNECT / WEBSOCKET
+   ========================================================= */
+async function connect(){
+  if(connecting) return;
+  const typed = $("pat").value.trim();
+  if(typed && typed !== pat){ pat = typed; account = null; }
+  if(!pat){ alert("Paste your Deriv PAT first."); return; }
+  connecting = true;
+  setStatus("connecting", "CONNECTING");
+  $("connectBtn").disabled = true;
+  $("connectBtn").textContent = "CONNECTING";
+  try{
+    if(!(account && account._want === $("accountType").value)) await getAccounts();
+    const url = await getOTP(account.account_id);
+    await openWebSocket(url);
+  }
+  catch(e){
+    connecting = false;
+    setStatus("offline", "OFFLINE");
+    $("connectBtn").disabled = false;
+    $("connectBtn").textContent = "CONNECT";
+    log(e.message || String(e), "error");
+    scheduleReconnect();
+  }
+}
+
+function openWebSocket(url){
+  return new Promise((resolve, reject) => {
+    let opened = false;
+    let sock;
+    try{ sock = new WebSocket(url); ws = sock; }catch(e){ reject(e); return; }
+    const timeout = setTimeout(() => {
+      if(!opened){ try{ ws.close(); }catch(e){} reject(new Error("WebSocket connection timeout.")); }
+    }, 15000);
+
+    ws.onopen = () => {
+      opened = true; clearTimeout(timeout);
+      connecting = false; authenticated = true; reconnectAttempt = 0; lastMsgAt = Date.now();
+      setStatus("online", "ONLINE");
+      $("connectBtn").disabled = false;
+      $("connectBtn").textContent = "CONNECTED";
+      $("connectBtn").classList.add("connected");
+      $("accCard").classList.add("linked");
+      log("Connected. Loading " + MARKET_DEFS.length + " markets (1000 ticks each)...");
+      setupSubscriptions();
+      startHeartbeat();
+      keepAwake();
+      resolve();
+    };
+    sock.onmessage = ev => {
+      if(ws !== sock) return;
+      lastMsgAt = Date.now();
+      let d; try{ d = JSON.parse(ev.data); }catch(e){ return; }
+      handleMessage(d);
+    };
+    sock.onerror = () => { if(ws === sock) log("WebSocket network error.", "warn"); };
+    sock.onclose = () => {
+      clearTimeout(timeout);
+      if(ws !== sock) return;
+      authenticated = false;
+      stopHeartbeat();
+      if(!opened){ reject(new Error("WebSocket closed before connection completed.")); return; }
+      socketLost();
+    };
+  });
+}
+
+function socketLost(){
+  authenticated = false;
+  stopHeartbeat();
+  setStatus("offline", "OFFLINE");
+  $("connectBtn").classList.remove("connected");
+  $("accCard").classList.remove("linked");
+  $("connectBtn").textContent = "RECONNECT";
+  log("Connection lost. State is saved.", "warn");
+  scheduleReconnect();
+}
+function dropSocket(){
+  const w = ws;
+  ws = null;
+  if(w){ w.onmessage = null; w.onclose = null; w.onerror = null; try{ w.close(); }catch(e){} }
+  socketLost();
+}
+function startHeartbeat(){
+  stopHeartbeat();
+  heartbeatTimer = setInterval(() => { if(ws && ws.readyState === 1) send({ ping: 1 }); }, 1000);
+}
+function stopHeartbeat(){ if(heartbeatTimer){ clearInterval(heartbeatTimer); heartbeatTimer = null; } }
+
+function scheduleReconnect(){
+  if(reconnectTimer || !pat) return;
+  reconnectAttempt++;
+  const delay = reconnectAttempt <= 1 ? 300 : (reconnectAttempt <= 60 ? 1000 : 5000);
+  log("Reconnecting in " + Math.ceil(delay / 1000) + "s...", "warn");
+  reconnectTimer = setTimeout(async () => { reconnectTimer = null; if(pat) await connect(); }, delay);
+}
+
+function send(payload){
+  if(!ws || ws.readyState !== 1) return false;
+  try{ ws.send(JSON.stringify(payload)); return true; }
+  catch(e){ log("Send error: " + e.message, "error"); return false; }
+}
+
+function request(payload, timeout){
+  return new Promise((resolve, reject) => {
+    const id = ++reqCounter;
+    payload.req_id = id;
+    const timer = setTimeout(() => { requests.delete(id); reject(new Error("Deriv request timed out.")); }, timeout || 10000);
+    requests.set(id, { resolve, reject, timer });
+    if(!send(payload)){
+      clearTimeout(timer); requests.delete(id);
+      reject(new Error("WebSocket is not connected."));
+    }
+  });
+}
+
+function handleMessage(d){
+  if(d.error){
+    const r = requests.get(d.req_id);
+    if(r){
+      clearTimeout(r.timer); requests.delete(d.req_id);
+      r.reject(new Error(d.error.message || d.error.code || "Deriv API error"));
+      return;
+    }
+    log(d.error.message || "Deriv error", "error");
+    return;
+  }
+  if(d.req_id){
+    const r = requests.get(d.req_id);
+    if(r){ clearTimeout(r.timer); requests.delete(d.req_id); r.resolve(d); }
+  }
+  if(d.msg_type === "tick") handleTick(d);
+  else if(d.msg_type === "balance") handleBalance(d);
+  else if(d.msg_type === "proposal_open_contract") handleContractUpdate(d.proposal_open_contract);
+}
+
+/* =========================================================
+   SUBSCRIPTIONS  -  every market is streamed and rated in the background
+   (one after another so Deriv does not rate-limit the start)
+   ========================================================= */
+async function setupSubscriptions(){
+  const run = ++subRun;
+  send({ balance: 1, subscribe: 1 });
+  T.openLegs.forEach(l => { if(!l.settled) send({ proposal_open_contract: 1, contract_id: l.id, subscribe: 1 }); });
+  for(const d of MARKET_DEFS){
+    if(run !== subRun || !authenticated) return;
+    await subscribeMarket(M[d.id]);
+    await sleep(150);
+  }
+  if(run === subRun) log("All markets loaded: " + MARKET_DEFS.filter(d => M[d.id].ready).length + "/" + MARKET_DEFS.length + " ready.");
+}
+
+async function subscribeMarket(m){
+  m.subscribed = true; m.subAt = Date.now();
+  send({ ticks: m.sym, subscribe: 1 });
+  for(let attempt = 0; attempt < 2; attempt++){
+    try{
+      const r = await request({ ticks_history: m.sym, end: "latest", count: DIGIT_MAX, style: "ticks" }, 12000);
+      const p = r && r.history && r.history.prices;
+      if(Array.isArray(p) && p.length){
+        if(r.pip_size !== undefined && Number.isFinite(Number(r.pip_size))) m.pip = Number(r.pip_size);
+        const fs = p.map(x => Number(x).toFixed(m.pip));
+        m.digits = fs.map(s => s.charCodeAt(s.length - 1) - 48).slice(-DIGIT_MAX);
+        evaluate(m);
+        if(m.id === sel) renderAll(); else renderTabs();
+      }
+      return;
+    }catch(e){
+      if(isRate(e) && attempt === 0){ await sleep(3000); continue; }
+      log(m.short + ": could not load tick history (" + e.message + ") — filling from live ticks.", "warn");
+      return;
+    }
+  }
+}
+async function resubscribeAll(){
+  send({ forget_all: "ticks" });
+  for(const d of MARKET_DEFS){
+    const m = M[d.id];
+    if(!m.subscribed || !authenticated) continue;
+    m.subAt = Date.now();
+    send({ ticks: m.sym, subscribe: 1 });
+    await sleep(200);
+  }
+}
+
+/* =========================================================
+   MARKET CHECK  (before trading starts)
+   ========================================================= */
+async function runPreflight(c){
+  T.pf = { live: null, data: null, contract: null };
+  renderRound(cur());
+  act("Checking the markets before trading...");
+  const now = Date.now();
+  const live = MARKET_DEFS.map(d => M[d.id]).filter(m => m.lastTickTime > 0 && now - m.lastTickTime < 5000);
+  const ready = MARKET_DEFS.map(d => M[d.id]).filter(m => m.ready);
+  T.pf.live = live.length > 0;
+  T.pf.data = ready.length > 0;
+  renderRound(cur());
+  if(!T.pf.live){
+    log("Market check FAILED: no live ticks from any market.", "error");
+    act("Market check failed — no live ticks. Try again.");
+    return false;
+  }
+  if(!T.pf.data){
+    log("Still loading 1000-tick history. Press START again shortly.", "warn");
+    act("Loading 1000-tick history — press START again shortly.");
+    return false;
+  }
+  const pm = ready.find(m => live.indexOf(m) >= 0) || ready[0];
+  let lastErr = null;
+  for(let attempt = 0; attempt < 3; attempt++){
+    try{
+      await request({
+        proposal: 1, amount: Number(c.levels[Math.min(T.level, c.levels.length - 1)].toFixed(2)), basis: "stake", contract_type: "DIGITMATCH",
+        currency: currency || "USD", duration: c.ticks, duration_unit: "t",
+        underlying_symbol: pm.sym, barrier: "0"
+      }, 8000);
+      T.pf.contract = true; lastErr = null;
+      break;
+    }
+    catch(e){
+      lastErr = e;
+      if(isRate(e) && attempt < 2){ act("Deriv rate limit — retrying the market check..."); await sleep(2500); continue; }
+      break;
+    }
+  }
+  if(lastErr){
+    T.pf.contract = false;
+    renderRound(cur());
+    log("Market check FAILED: " + lastErr.message, "error");
+    act("Market check failed — " + lastErr.message);
+    return false;
+  }
+  renderRound(cur());
+  log("Market check passed: " + live.length + " live • " + ready.length + " rated • MATCH is offered.");
+  return true;
+}
+
+/* =========================================================
+   START / PAUSE / STOP
+   ========================================================= */
+async function startTrading(){
+  if(T.pfBusy || (T.running && !T.paused)) return;
+  if(!authenticated){ alert("Connect to Deriv first."); return; }
+  if(T.openLegs.length){ alert("Wait for the open round to finish."); return; }
+  const c = readSettings();
+  T.pfBusy = true; renderControls();
+  let ok = false;
+  try{ ok = await runPreflight(c); }catch(e){ log("Market check error: " + e.message, "error"); }
+  T.pfBusy = false;
+  if(!ok){ renderControls(); return; }
+
+  T.activeCfg = c;
+  if(!T.running) T.basePL = T.sessionPL;
+  T.running = true; T.paused = false; T.failCount = 0;
+  act(idleText());
+  log("Trading started • " + MARKET_DEFS.length + " markets watched • MATCH 0-7 when the setup is valid and a tick lands on 8 • stakes " + c.levels.map(v => v.toFixed(2)).join(" → ") + " per digit • expiry " + c.ticks + " tick" + (c.ticks > 1 ? "s" : "") + ".");
+  saveState();
+  renderAll();
+}
+function pauseTrading(){
+  if(!T.running) return;
+  T.paused = !T.paused;
+  act(T.paused ? (T.openLegs.length ? "Paused — open round will settle." : "Paused — press PAUSE again to continue.") : idleText());
+  log(T.paused ? "Trading paused." : "Trading resumed.", "warn");
+  renderControls();
+}
+function stopTrading(reason){
+  T.running = false; T.paused = false;
+  act(reason);
+  log(reason, "warn");
+  renderControls();
+}
+
+/* =========================================================
+   BUYING  -  one request per digit
+   ========================================================= */
+async function sendBuy(payload){
+  if(buySubOK) payload.subscribe = 1;
+  try{ return await request(payload, 10000); }
+  catch(e){
+    if(buySubOK && /subscribe/i.test(e.message)){
+      buySubOK = false;
+      log("Deriv does not take subscribe on buy — subscribing separately.", "warn");
+      delete payload.subscribe;
+      return await request(payload, 10000);
+    }
+    throw e;
+  }
+}
+
+async function buyOnce(m, digit, stake, c){
+  const amt = Number(stake.toFixed(2));
+  const params = {
+    amount: amt, basis: "stake", contract_type: "DIGITMATCH", currency: currency || "USD",
+    duration: c.ticks, duration_unit: "t", underlying_symbol: m.sym, barrier: String(digit)
+  };
+  let res = null;
+  if(directBuyOK){
+    try{ res = await sendBuy({ buy: 1, price: amt, parameters: params }); }
+    catch(e){
+      const msg = e.message || "";
+      if(!isRate(e) && !/duration|offered|stake|amount|balance|barrier|market/i.test(msg) && /valid|input|schema|unrecogn|additional|parameter|propert/i.test(msg)){
+        directBuyOK = false;
+        log("One-step buy not accepted — using proposal + buy.", "warn");
+      }
+      else throw e;
+    }
+  }
+  if(!res){
+    const pr = await request({
+      proposal: 1, amount: amt, basis: "stake", contract_type: "DIGITMATCH", currency: currency || "USD",
+      duration: c.ticks, duration_unit: "t", underlying_symbol: m.sym, barrier: String(digit)
+    }, 10000);
+    const p = pr.proposal;
+    if(!p) throw new Error("No proposal returned by Deriv.");
+    const pid = p.id || p.proposal_id;
+    const ask = Number(p.ask_price || p.display_value || p.amount);
+    if(!pid || !Number.isFinite(ask)) throw new Error("Invalid proposal.");
+    res = await sendBuy({ buy: String(pid), price: Number(ask.toFixed(2)) });
+  }
+  const b = res && res.buy;
+  if(!b || !b.contract_id) throw new Error("No buy confirmation returned.");
+  return { id: Number(b.contract_id), digit: digit, stake: stake, openedAt: Date.now(), settled: false, profit: 0, won: false, gotPOC: false };
+}
+async function buyLeg(m, digit, stake, c){
+  for(let attempt = 0; attempt < 2; attempt++){
+    try{ return { leg: await buyOnce(m, digit, stake, c) }; }
+    catch(e){
+      if(isRate(e) && attempt === 0){ await sleep(700); continue; }
+      return { err: e };
+    }
+  }
+  return { err: new Error("buy failed") };
+}
+
+/* =========================================================
+   ENTRY  -  MATCH 0-7 all at once, on the tick that lands on 8
+   ========================================================= */
+function maybeEnter(m){
+  if(!T.running || T.paused || !authenticated || T.openLegs.length || T.tradeInFlight) return;
+  if(Date.now() < T.blockedUntil) return;
+  if(Date.now() - m.lastTickTime > 800) return;
+  attemptEntry(m);
+}
+async function attemptEntry(m){
+  if(!T.running || T.paused || !authenticated || T.openLegs.length || T.tradeInFlight) return;
+  if(!ws || ws.readyState !== 1) return;
+  const c = cfg();
+  const picks = MATCH_DIGITS.map(d => ({ digit: d, pct: m.pct[d] }));
+  const stake = levelStake();
+  const total = r2(stake * PAIRS);
+  if(balanceNow !== null && total > balanceNow + 1e-9){
+    stopTrading("Balance " + balanceNow.toFixed(2) + " is lower than the round total " + total.toFixed(2) + ". Trading stopped.");
+    return;
+  }
+
+  T.tradeInFlight = true;                              /* set before any await: only one market can enter */
+  const name = "MATCH 0-7";
+  const setup = "8:" + m.pct[8].toFixed(1) + "% 9:" + m.pct[9].toFixed(1) + "% top " + m.topDigits.join("/");
+  T.round = { level: T.level, stake: stake, mkt: m.id, mname: m.short, name: name, setup: setup, picks: picks.map(x => ({ digit: x.digit, pct: x.pct, state: "live" })), openedAt: Date.now() };
+  const buys = Promise.all(picks.map(x => buyLeg(m, x.digit, stake, c)));
+  if(sel !== m.id){ sel = m.id; renderAll(); } else renderRound(m);
+  act(m.short + " • " + name + " • Level " + (T.level + 1) + " • " + stake.toFixed(2) + " each — sending");
+  log(m.short + " ENTRY on 8: " + setup + " | Level " + (T.level + 1) + "/" + c.levels.length + " | " + stake.toFixed(2) + " per digit | total " + total.toFixed(2));
+
+  try{
+    const results = await buys;
+    const legs = [];
+    let rateHit = false, firstErr = "";
+    results.forEach((r, i) => {
+      if(r.leg) legs.push(r.leg);
+      else{
+        T.round.picks[i].state = "skip";
+        const msg = (r.err && r.err.message) || "buy failed";
+        if(isRate(r.err)) rateHit = true;
+        if(!firstErr) firstErr = msg;
+        log("Digit " + picks[i].digit + " not bought: " + msg, "warn");
+      }
+    });
+
+    if(rateHit){
+      rateBackoff = Math.min(15000, Math.max(2000, rateBackoff * 2));
+      log("Deriv rate limit hit — slowing down. Next round in " + Math.ceil(rateBackoff / 1000) + "s.", "warn");
+    }
+    if(!legs.length){
+      if(rateHit){
+        T.tradeInFlight = false; T.round = null;
+        T.blockedUntil = Date.now() + rateBackoff;
+        act("Deriv rate limit — waiting " + Math.ceil(rateBackoff / 1000) + "s, then trying again.");
+        renderAll();
+        return;
+      }
+      throw new Error("none of the " + PAIRS + " contracts could be bought (" + firstErr + ")");
+    }
+    if(legs.length < PAIRS) log("Only " + legs.length + " of " + PAIRS + " contracts were bought this round.", "warn");
+    else if(!rateHit) rateBackoff = Math.max(0, rateBackoff - 1000);
+
+    T.openLegs = legs;
+    T.failCount = 0;
+    act(m.short + " • " + name + " • Level " + (T.level + 1) + " • " + stake.toFixed(2) + " each — in play");
+    log("Round OPEN (" + m.short + ") • " + legs.length + " contracts • total " + r2(stake * legs.length).toFixed(2));
+    if(!buySubOK) legs.forEach(l => send({ proposal_open_contract: 1, contract_id: l.id, subscribe: 1 }));
+    else setTimeout(() => {
+      T.openLegs.forEach(l => { if(!l.settled && !l.gotPOC) send({ proposal_open_contract: 1, contract_id: l.id, subscribe: 1 }); });
+    }, 2200);
+    renderAll();
+  }
+  catch(e){
+    log("Entry failed (" + m.short + "): " + e.message, "error");
+    T.tradeInFlight = false;
+    T.round = null;
+    T.failCount++;
+    T.blockedUntil = Date.now() + 1500;
+    renderAll();
+    if(T.failCount >= 5) stopTrading("Stopped: 5 failed entries in a row. Check the log.");
+    else act("Entry failed — trying again on the next setup.");
+  }
+}
+
+/* =========================================================
+   RESULT  -  WIN if one digit wins, LOSS if none wins. A loss raises the stake for the next setup on ANY market.
+   ========================================================= */
+function handleContractUpdate(c){
+  if(!c) return;
+  const leg = T.openLegs.find(l => l.id === Number(c.contract_id));
+  if(!leg || leg.settled) return;
+  leg.gotPOC = true;
+  const st = String(c.status || "").toLowerCase();
+  const sold = c.is_sold === 1 || st === "sold" || st === "won" || st === "lost" || st === "expired";
+  if(!sold) return;
+  let profit = Number(c.profit);
+  if(!Number.isFinite(profit)) profit = 0;
+  leg.settled = true; leg.profit = profit; leg.won = profit > 0;
+  if(T.openLegs.every(l => l.settled)) settleRound();
+}
+
+function flashRound(){
+  const el = $("roundCard");
+  el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+}
+
+function settleRound(){
+  const legs = T.openLegs;
+  const rd = T.round || { level: T.level, stake: levelStake(), name: "", mname: "", setup: "", picks: [] };
+  T.openLegs = []; T.tradeInFlight = false;
+
+  const net = legs.reduce((a, l) => a + l.profit, 0);
+  const winners = legs.filter(l => l.won);
+  const won = winners.length > 0;
+  T.sessionPL += net;
+
+  if(T.round) T.round.picks.forEach(p => { if(p.state !== "skip") p.state = legs.some(l => l.digit === p.digit && l.won) ? "win" : "lose"; });
+  T.showResultUntil = Date.now() + 2500;
+
+  T.history.push({ t: Date.now(), level: rd.level, stake: rd.stake, name: rd.name, mkt: rd.mname, setup: rd.setup, digits: legs.map(l => l.digit), winDigit: won ? winners[0].digit : null, pl: net, won: won });
+  if(T.history.length > 100) T.history.shift();
+
+  const len = cfg().levels.length;
+  let finished = false;
+  if(won){
+    T.wins++;
+    log("ROUND WIN +" + net.toFixed(2) + " (" + rd.mname + ") • digit " + winners.map(l => l.digit).join(",") + " hit • Level " + (rd.level + 1), "win");
+    if(rd.level > 0) log("Back to level 1 (" + cfg().levels[0].toFixed(2) + " per digit).", "win");
+    T.level = 0;
+    flashRound();
+  }
+  else{
+    T.losses++;
+    log("ROUND LOSS " + net.toFixed(2) + " (" + rd.mname + ") • none of " + legs.map(l => l.digit).join(" ") + " hit • Level " + (rd.level + 1) + "/" + len, "loss");
+    T.level = rd.level + 1;
+    if(T.level >= len){ finished = true; T.level = 0; }
+    else log("Recovery: next setup on ANY market uses level " + (T.level + 1) + " • " + levelStake().toFixed(2) + " per digit (" + r2(levelStake() * PAIRS).toFixed(2) + " total).", "warn");
+  }
+
+  T.blockedUntil = Date.now() + RESULT_PAUSE + rateBackoff;
+  saveState();
+  renderAll();
+
+  if(finished){ stopTrading("All " + len + " levels lost. Trading stopped — press START for a fresh run."); return; }
+  const runPL = T.sessionPL - (T.basePL || 0);
+  if(T.activeCfg && T.activeCfg.tp > 0 && runPL >= T.activeCfg.tp){ stopTrading("TAKE PROFIT reached: +" + runPL.toFixed(2)); return; }
+  if(T.activeCfg && T.activeCfg.sl > 0 && runPL <= -Math.abs(T.activeCfg.sl)){ stopTrading("STOP LOSS reached: " + runPL.toFixed(2)); return; }
+  if(T.running && !T.paused) act(idleText());
+}
+
+/* if the result stream is slow, ask for the contracts directly */
+setInterval(() => {
+  if(!authenticated || !T.openLegs.length) return;
+  const wait = cfg().ticks * 1000 + 6000;
+  T.openLegs.forEach(l => { if(!l.settled && Date.now() - l.openedAt > wait) send({ proposal_open_contract: 1, contract_id: l.id }); });
+}, 3000);
+
+/* keep the status line and market list fresh */
+setInterval(() => {
+  if(T.running && !T.paused && !T.openLegs.length && !T.tradeInFlight && Date.now() >= T.blockedUntil) act(idleText());
+  if($("pMkt").classList.contains("open")) renderTabs();
+}, 1000);
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+const RULE_LABELS = ["8 < 10%", "9 < 10%", "Top 3+ from 8", "4+ of 0-7 > 10%", "|0 − 8| > 2%"];
+function renderTop(m){
+  $("plabel").textContent = m.name + " LIVE";
+  $("mkLabel").textContent = "• " + m.short;
+  $("price").textContent = m.priceStr || "----.--";
+  $("pdigit").textContent = m.lastDg >= 0 ? m.lastDg : "-";
+  $("pdigit").className = "pdigit" + (m.lastDg === TRIGGER_DIGIT ? " hit" : "");
+}
+function renderTabs(){
+  const box = $("mList");
+  if(!box) return;
+  const ready = MARKET_DEFS.filter(d => M[d.id].ready).length;
+  const armed = MARKET_DEFS.filter(d => M[d.id].setup).length;
+  $("mSum").textContent = MARKET_DEFS.length + " markets monitored • " + ready + " rated • " + armed + " with a valid setup";
+  box.innerHTML = MARKET_DEFS.map(d => {
+    const m = M[d.id];
+    let info;
+    if(!m.ready) info = '<small>' + (m.digits.length ? Math.round(m.digits.length / DIGIT_WIN * 100) + "%" : "…") + '</small>';
+    else if(m.setup) info = '<small class="gold">SETUP</small>';
+    else info = '<small>' + m.passed + "/" + RULE_COUNT + '</small>';
+    return '<button class="mtab' + (d.id === sel ? " on" : "") + '" data-m="' + d.id + '"><span>' + d.short + '</span>' + info + '</button>';
+  }).join("");
+}
+function renderControls(){
+  $("startBtn").classList.toggle("running", T.running && !T.paused);
+  $("startBtn").textContent = T.pfBusy ? "CHECKING..." : (T.running ? "TRADING" : "START");
+  $("pauseBtn").classList.toggle("active", T.paused);
+  $("pauseBtn").textContent = T.paused ? "PAUSED" : "PAUSE";
+}
+function renderRound(m){
+  if(m.id !== sel) return;
+  const c = cfg();
+  const lv = Math.min(T.level, c.levels.length - 1);
+  const inRound = !!(T.round && T.round.mkt === m.id && (T.openLegs.length || Date.now() < T.showResultUntil));
+  $("roundTitle").textContent = m.name;
+  $("roundHint").textContent = (inRound ? "round in play" : "1000-tick rating") + " • " + PAIRS + " × " + c.levels[lv].toFixed(2) + " = " + r2(c.levels[lv] * PAIRS).toFixed(2);
+
+  if(!m.ready) $("sigLine").textContent = "Loading ticks " + m.digits.length + "/" + DIGIT_WIN;
+  else if(m.setup) $("sigLine").innerHTML = '<b style="color:var(--gold)">SETUP READY — enters when a tick lands on 8</b>';
+  else $("sigLine").textContent = "Rules " + m.passed + "/" + RULE_COUNT + " • no setup yet";
+
+
+  $("pills").style.gridTemplateColumns = "repeat(" + Math.min(c.levels.length, 4) + ",1fr)";
+  $("pills").innerHTML = c.levels.map((v, i) =>
+    '<div class="pill ' + (i < T.level ? "lost" : (i === T.level ? "now" : "")) + '"><small>LEVEL ' + (i + 1) + '</small>' + v.toFixed(2) + '</div>').join("");
+  const setCk = (id, v, lab) => { $(id).className = "ck" + (v === true ? " ok" : v === false ? " bad" : ""); $(id).textContent = lab + (v === true ? " ✓" : v === false ? " ✗" : " •"); };
+  setCk("ckLive", T.pf.live, "MARKET");
+  setCk("ckData", T.pf.data, "DATA");
+  setCk("ckContract", T.pf.contract, "CONTRACT");
+  $("activity").textContent = T.activity;
+  renderControls();
+}
+function renderKPIs(){
+  $("kPL").textContent = (T.sessionPL > 0 ? "+" : "") + T.sessionPL.toFixed(2);
+  $("kPL").className = "kv mono " + (T.sessionPL >= 0 ? "green" : "red");
+  $("kWL").textContent = T.wins + "/" + T.losses;
+  const tot = T.wins + T.losses;
+  $("kRate").textContent = (tot ? (T.wins / tot * 100).toFixed(1) : "0") + "%";
+  $("kTrades").textContent = tot;
+}
+function renderDigits(m){
+  const n = m.n;
+  const mx = Math.max(1, ...m.cnt);
+  let h = "";
+  for(let i = 0; i < 10; i++){
+    let cls = "bcol";
+    if(m.ready && m.topDigits.indexOf(i) >= 0) cls += " top";
+    else if(i <= 7) cls += " target";
+    if(i >= 8) cls += " low";
+    h += '<div class="' + cls + '"><div class="bpct">' + (n ? m.pct[i].toFixed(1) + "%" : "") + '</div><div class="bfill" style="height:' + Math.round(m.cnt[i] / mx * 44) + 'px"></div><div class="blab">' + i + '</div></div>';
+  }
+  $("bars").innerHTML = h;
+  const rd = a => a.reduce((x, d) => x + Math.round(m.pct[d]), 0);
+  $("digHint").textContent = "last " + n + " • ODD " + (n ? rd([1, 3, 5, 7, 9]) : "–") + "% • EVEN " + (n ? rd([0, 2, 4, 6, 8]) : "–") + "%";
+}
+function renderHistory(){
+  const rows = T.history.slice().reverse();
+  $("hcount").textContent = rows.length ? rows.length + " round" + (rows.length > 1 ? "s" : "") + " • newest first" : "No rounds yet";
+  if(!rows.length){ $("hist").innerHTML = '<div class="empty">No rounds yet</div>'; return; }
+  $("hist").innerHTML = rows.map(r =>
+    '<div class="hrow"><span class="t mono">' + new Date(r.t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + '</span>' +
+    '<span>L' + (r.level + 1) + ' • ' + (r.mkt || "") + (r.won ? ' → <b class="green">' + r.winDigit + '</b>' : ' • none hit') + '</span>' +
+    '<span class="res ' + (r.won ? "w" : "l") + '">' + (r.won ? "WIN" : "LOSS") + '</span>' +
+    '<span class="hpl mono ' + (r.won ? "green" : "red") + '">' + (r.pl > 0 ? "+" : "") + r.pl.toFixed(2) + '</span></div>'
+  ).join("");
+}
+function renderAll(){
+  const m = cur();
+  renderTop(m); renderKPIs(); renderRound(m); renderDigits(m); renderHistory(); renderTabs(); renderControls(); renderRisk();
+}
+function selectMarket(id){
+  if(!M[id]) return;
+  sel = id;
+  saveState();
+  renderAll();
+}
+
+/* =========================================================
+   CONNECTION WATCHDOG  -  checks every second
+   ========================================================= */
+async function keepAwake(){
+  try{
+    if(navigator.wakeLock && document.visibilityState === "visible" && !(wakeLock && !wakeLock.released))
+      wakeLock = await navigator.wakeLock.request("screen");
+  }catch(e){}
+}
+function reconnectNow(){
+  if(!pat || authenticated || connecting) return;
+  if(reconnectTimer){ clearTimeout(reconnectTimer); reconnectTimer = null; }
+  connect();
+}
+setInterval(() => {
+  if(!pat) return;
+  const now = Date.now();
+  if(!authenticated){ reconnectNow(); return; }
+  if(!ws || ws.readyState !== 1 || now - lastMsgAt > STALE_MS){
+    log("Connection stale — reconnecting now.", "warn");
+    dropSocket();
+    reconnectNow();
+    return;
+  }
+  /* a market that was ticking stopped: re-subscribe the streams (markets that never ticked are ignored) */
+  if(now - lastResubAt > TICK_STALE_MS){
+    const stale = MARKET_DEFS.some(d => { const m = M[d.id]; return m.subscribed && m.lastTickTime > 0 && now - m.lastTickTime > TICK_STALE_MS; });
+    if(stale){
+      lastResubAt = now;
+      log("A market stopped ticking for 10s — re-subscribing.", "warn");
+      resubscribeAll();
+    }
+  }
+}, 1000);
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+$("connectBtn").onclick = async () => {
+  if(authenticated){
+    pat = ""; subRun++;
+    if(reconnectTimer){ clearTimeout(reconnectTimer); reconnectTimer = null; }
+    stopHeartbeat(); authenticated = false;
+    try{ ws && ws.close(); }catch(e){}
+    ws = null;
+    setStatus("offline", "OFFLINE");
+    $("connectBtn").classList.remove("connected");
+    $("accCard").classList.remove("linked");
+    $("connectBtn").textContent = "CONNECT";
+    log("Disconnected by user.", "warn");
+    return;
+  }
+  await connect();
+};
+$("startBtn").onclick = () => startTrading();
+$("pauseBtn").onclick = () => pauseTrading();
+$("resetBtn").onclick = () => {
+  if(T.openLegs.length){ alert("Wait for the open round to finish, then reset."); return; }
+  if(!confirm("Reset the session? This clears P/L, win/loss and goes back to level 1.")) return;
+  T.level = 0; T.sessionPL = 0; T.basePL = 0; T.wins = 0; T.losses = 0; T.history = []; T.round = null;
+  saveState(); renderAll();
+  log("Session reset. Level 1, counters cleared.");
+  act(T.running && !T.paused ? idleText() : "Ready to trade.");
+};
+
+function togglePanel(name){
+  ["Set", "Hist", "Mkt", "Log"].forEach(n => {
+    const open = n === name && !$("p" + n).classList.contains("open");
+    $("p" + n).classList.toggle("open", open);
+    $("tab" + n).classList.toggle("on", open);
+  });
+}
+$("tabSet").onclick = () => togglePanel("Set");
+$("tabHist").onclick = () => togglePanel("Hist");
+$("tabMkt").onclick = () => togglePanel("Mkt");
+$("tabLog").onclick = () => togglePanel("Log");
+$("mList").onclick = e => { const b = e.target.closest("[data-m]"); if(b) selectMarket(b.getAttribute("data-m")); };
+["sStake", "sMax", "sTP", "sSL", "sTicks"].forEach(id => $(id).addEventListener("input", () => { renderAll(); saveState(); }));
+
+window.addEventListener("pagehide", () => { saveState(); });
+window.addEventListener("offline", () => { setStatus("offline", "NETWORK OFFLINE"); log("Device network unavailable. State is saved.", "warn"); });
+window.addEventListener("online", () => { log("Network restored — reconnecting now."); reconnectAttempt = 0; reconnectNow(); });
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState === "visible"){ keepAwake(); reconnectNow(); }
+});
+
+/* =========================================================
+   START UP
+   ========================================================= */
+loadState();
+renderAll();
+log("Ganeva_Bot • " + MARKET_DEFS.length + " markets rated on the latest " + DIGIT_WIN + " ticks • MATCH 0-7 when a tick lands on 8.");
+log("Paste your PAT, choose DEMO or REAL, press CONNECT, then START.");
+</script>
+</body>
+</html>
